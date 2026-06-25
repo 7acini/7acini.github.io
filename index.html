@@ -35,6 +35,7 @@
           radial-gradient(circle at 58% 44%, rgba(51, 204, 255, 0.09), transparent 30rem),
           var(--bg);
         color: var(--fg);
+        cursor: crosshair;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       }
 
@@ -249,6 +250,12 @@
         let nodes = [];
         let pulses = [];
         let frame = 0;
+        let lastCursorPulse = 0;
+        const cursor = {
+          x: 0,
+          y: 0,
+          active: false
+        };
 
         function resize() {
           dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -271,13 +278,13 @@
           }));
         }
 
-        function addPulse() {
+        function addPulse(x = Math.random() * width, y = Math.random() * height, hue = Math.random() > 0.7 ? "255, 49, 88" : "35, 247, 168") {
           pulses.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
+            x,
+            y,
             r: 0,
             alpha: 0.32,
-            hue: Math.random() > 0.7 ? "255, 49, 88" : "35, 247, 168"
+            hue
           });
 
           if (pulses.length > 7) pulses.shift();
@@ -298,11 +305,26 @@
 
         function drawNodes() {
           const maxDistance = Math.min(190, Math.max(112, width * 0.13));
+          const cursorDistance = Math.min(260, Math.max(150, width * 0.18));
 
           for (const node of nodes) {
+            if (cursor.active) {
+              const dx = cursor.x - node.x;
+              const dy = cursor.y - node.y;
+              const distance = Math.hypot(dx, dy) || 1;
+
+              if (distance < cursorDistance) {
+                const force = (1 - distance / cursorDistance) * 0.018;
+                node.vx += (dx / distance) * force;
+                node.vy += (dy / distance) * force;
+              }
+            }
+
             node.x += node.vx;
             node.y += node.vy;
             node.phase += 0.015;
+            node.vx *= 0.995;
+            node.vy *= 0.995;
 
             if (node.x < -20) node.x = width + 20;
             if (node.x > width + 20) node.x = -20;
@@ -331,10 +353,43 @@
             }
 
             const pulse = 0.5 + Math.sin(a.phase) * 0.5;
-            ctx.fillStyle = `rgba(216, 248, 240, ${0.34 + pulse * 0.3})`;
+            let cursorAlpha = 0;
+
+            if (cursor.active) {
+              const distance = Math.hypot(cursor.x - a.x, cursor.y - a.y);
+
+              if (distance < cursorDistance) {
+                cursorAlpha = 1 - distance / cursorDistance;
+                ctx.strokeStyle = `rgba(51, 204, 255, ${cursorAlpha * 0.34})`;
+                ctx.lineWidth = 0.9 + cursorAlpha * 1.4;
+                ctx.beginPath();
+                ctx.moveTo(cursor.x, cursor.y);
+                ctx.lineTo(a.x, a.y);
+                ctx.stroke();
+              }
+            }
+
+            ctx.fillStyle = `rgba(216, 248, 240, ${0.34 + pulse * 0.3 + cursorAlpha * 0.38})`;
             ctx.beginPath();
-            ctx.arc(a.x, a.y, a.r + pulse * 0.5, 0, Math.PI * 2);
+            ctx.arc(a.x, a.y, a.r + pulse * 0.5 + cursorAlpha * 2.1, 0, Math.PI * 2);
             ctx.fill();
+          }
+
+          if (cursor.active) {
+            const glow = ctx.createRadialGradient(cursor.x, cursor.y, 0, cursor.x, cursor.y, cursorDistance * 0.55);
+            glow.addColorStop(0, "rgba(51, 204, 255, 0.18)");
+            glow.addColorStop(0.45, "rgba(35, 247, 168, 0.06)");
+            glow.addColorStop(1, "rgba(35, 247, 168, 0)");
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(cursor.x, cursor.y, cursorDistance * 0.55, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = "rgba(35, 247, 168, 0.42)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cursor.x, cursor.y, 8 + Math.sin(frame * 0.08) * 2, 0, Math.PI * 2);
+            ctx.stroke();
           }
         }
 
@@ -384,6 +439,21 @@
         }
 
         window.addEventListener("resize", resize);
+        window.addEventListener("pointermove", (event) => {
+          cursor.x = event.clientX;
+          cursor.y = event.clientY;
+          cursor.active = true;
+
+          const now = performance.now();
+          if (!reducedMotion && now - lastCursorPulse > 420) {
+            addPulse(cursor.x, cursor.y, "51, 204, 255");
+            lastCursorPulse = now;
+          }
+        });
+
+        window.addEventListener("pointerleave", () => {
+          cursor.active = false;
+        });
       })();
     </script>
   </body>
