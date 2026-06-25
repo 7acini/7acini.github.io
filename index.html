@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#030506">
+    <title>7acini</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #030506;
+        --fg: #d8f8f0;
+        --muted: #6f8785;
+        --green: #23f7a8;
+        --cyan: #33ccff;
+        --red: #ff3158;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 20% 25%, rgba(35, 247, 168, 0.15), transparent 28rem),
+          radial-gradient(circle at 82% 68%, rgba(255, 49, 88, 0.13), transparent 24rem),
+          radial-gradient(circle at 58% 44%, rgba(51, 204, 255, 0.09), transparent 30rem),
+          var(--bg);
+        color: var(--fg);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      body::before {
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+        background-size: 46px 46px;
+        mask-image: radial-gradient(circle at center, black, transparent 72%);
+      }
+
+      body::after {
+        background:
+          repeating-linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.035) 0,
+            rgba(255, 255, 255, 0.035) 1px,
+            transparent 1px,
+            transparent 4px
+          );
+        mix-blend-mode: overlay;
+        opacity: 0.24;
+      }
+
+      #field {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .shell {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        min-height: 100svh;
+        place-items: center;
+        padding: 2rem;
+      }
+
+      .identity {
+        width: min(920px, 100%);
+        border: 1px solid rgba(35, 247, 168, 0.22);
+        background: rgba(1, 6, 7, 0.42);
+        box-shadow:
+          0 0 70px rgba(35, 247, 168, 0.08),
+          inset 0 0 55px rgba(35, 247, 168, 0.035);
+        padding: clamp(1.4rem, 5vw, 4rem);
+        backdrop-filter: blur(8px);
+        clip-path: polygon(0 0, calc(100% - 2rem) 0, 100% 2rem, 100% 100%, 2rem 100%, 0 calc(100% - 2rem));
+      }
+
+      .kicker {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0 0 1.25rem;
+        color: var(--green);
+        font-size: clamp(0.72rem, 2vw, 0.9rem);
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+      }
+
+      .kicker::before {
+        content: "";
+        width: 0.65rem;
+        height: 0.65rem;
+        background: var(--red);
+        box-shadow: 0 0 18px var(--red);
+      }
+
+      h1 {
+        position: relative;
+        margin: 0;
+        color: var(--fg);
+        font-size: clamp(3.2rem, 16vw, 11.5rem);
+        line-height: 0.86;
+        letter-spacing: -0.12em;
+        text-transform: uppercase;
+        text-shadow:
+          0 0 12px rgba(35, 247, 168, 0.32),
+          0 0 44px rgba(51, 204, 255, 0.12);
+      }
+
+      h1::before,
+      h1::after {
+        content: attr(data-text);
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      h1::before {
+        color: var(--cyan);
+        transform: translate(0.04em, -0.025em);
+        mix-blend-mode: screen;
+        opacity: 0.36;
+        clip-path: inset(0 0 58% 0);
+        animation: glitch-a 4.8s steps(1, end) infinite;
+      }
+
+      h1::after {
+        color: var(--red);
+        transform: translate(-0.035em, 0.025em);
+        mix-blend-mode: screen;
+        opacity: 0.3;
+        clip-path: inset(58% 0 0 0);
+        animation: glitch-b 5.7s steps(1, end) infinite;
+      }
+
+      .status {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem 1rem;
+        margin: 1.8rem 0 0;
+        color: var(--muted);
+        font-size: clamp(0.76rem, 2vw, 0.96rem);
+        letter-spacing: 0.08em;
+      }
+
+      .status span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .status span::before {
+        content: "//";
+        color: var(--green);
+      }
+
+      .corner {
+        position: fixed;
+        z-index: 2;
+        width: min(18vw, 9rem);
+        height: min(18vw, 9rem);
+        border-color: rgba(35, 247, 168, 0.55);
+        pointer-events: none;
+      }
+
+      .corner.tl {
+        top: 1.25rem;
+        left: 1.25rem;
+        border-top: 1px solid;
+        border-left: 1px solid;
+      }
+
+      .corner.br {
+        right: 1.25rem;
+        bottom: 1.25rem;
+        border-right: 1px solid;
+        border-bottom: 1px solid;
+      }
+
+      @keyframes glitch-a {
+        0%, 91%, 100% { clip-path: inset(0 0 58% 0); transform: translate(0.04em, -0.025em); }
+        92% { clip-path: inset(14% 0 71% 0); transform: translate(0.08em, -0.015em); }
+        93% { clip-path: inset(62% 0 24% 0); transform: translate(-0.03em, 0.02em); }
+        94% { clip-path: inset(38% 0 44% 0); transform: translate(0.03em, -0.04em); }
+      }
+
+      @keyframes glitch-b {
+        0%, 86%, 100% { clip-path: inset(58% 0 0 0); transform: translate(-0.035em, 0.025em); }
+        87% { clip-path: inset(76% 0 9% 0); transform: translate(-0.07em, 0.015em); }
+        88% { clip-path: inset(22% 0 63% 0); transform: translate(0.025em, -0.02em); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        h1::before,
+        h1::after {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="field" aria-hidden="true"></canvas>
+    <span class="corner tl" aria-hidden="true"></span>
+    <span class="corner br" aria-hidden="true"></span>
+
+    <main class="shell" aria-label="Página inicial de Guilherme Facini">
+      <section class="identity">
+        <p class="kicker">signal acquired</p>
+        <h1 data-text="7acini">7acini</h1>
+        <p class="status">
+          <span>offensive security</span>
+          <span>research</span>
+          <span>low noise mode</span>
+        </p>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        const canvas = document.getElementById("field");
+        const ctx = canvas.getContext("2d", { alpha: true });
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        let width = 0;
+        let height = 0;
+        let dpr = 1;
+        let nodes = [];
+        let pulses = [];
+        let frame = 0;
+
+        function resize() {
+          dpr = Math.min(window.devicePixelRatio || 1, 2);
+          width = window.innerWidth;
+          height = window.innerHeight;
+          canvas.width = Math.floor(width * dpr);
+          canvas.height = Math.floor(height * dpr);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          const count = Math.max(36, Math.floor((width * height) / 18000));
+          nodes = Array.from({ length: count }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.28,
+            vy: (Math.random() - 0.5) * 0.28,
+            r: Math.random() * 1.4 + 0.4,
+            phase: Math.random() * Math.PI * 2
+          }));
+        }
+
+        function addPulse() {
+          pulses.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            r: 0,
+            alpha: 0.32,
+            hue: Math.random() > 0.7 ? "255, 49, 88" : "35, 247, 168"
+          });
+
+          if (pulses.length > 7) pulses.shift();
+        }
+
+        function drawBackground() {
+          ctx.clearRect(0, 0, width, height);
+          ctx.fillStyle = "rgba(3, 5, 6, 0.38)";
+          ctx.fillRect(0, 0, width, height);
+
+          const gradient = ctx.createRadialGradient(width * 0.5, height * 0.5, 0, width * 0.5, height * 0.5, Math.max(width, height) * 0.7);
+          gradient.addColorStop(0, "rgba(35, 247, 168, 0.045)");
+          gradient.addColorStop(0.5, "rgba(51, 204, 255, 0.025)");
+          gradient.addColorStop(1, "rgba(0, 0, 0, 0.72)");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, width, height);
+        }
+
+        function drawNodes() {
+          const maxDistance = Math.min(190, Math.max(112, width * 0.13));
+
+          for (const node of nodes) {
+            node.x += node.vx;
+            node.y += node.vy;
+            node.phase += 0.015;
+
+            if (node.x < -20) node.x = width + 20;
+            if (node.x > width + 20) node.x = -20;
+            if (node.y < -20) node.y = height + 20;
+            if (node.y > height + 20) node.y = -20;
+          }
+
+          for (let i = 0; i < nodes.length; i += 1) {
+            const a = nodes[i];
+
+            for (let j = i + 1; j < nodes.length; j += 1) {
+              const b = nodes[j];
+              const dx = a.x - b.x;
+              const dy = a.y - b.y;
+              const distance = Math.hypot(dx, dy);
+
+              if (distance < maxDistance) {
+                const alpha = (1 - distance / maxDistance) * 0.2;
+                ctx.strokeStyle = `rgba(35, 247, 168, ${alpha})`;
+                ctx.lineWidth = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(a.x, a.y);
+                ctx.lineTo(b.x, b.y);
+                ctx.stroke();
+              }
+            }
+
+            const pulse = 0.5 + Math.sin(a.phase) * 0.5;
+            ctx.fillStyle = `rgba(216, 248, 240, ${0.34 + pulse * 0.3})`;
+            ctx.beginPath();
+            ctx.arc(a.x, a.y, a.r + pulse * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        function drawPulses() {
+          for (const pulse of pulses) {
+            pulse.r += 1.6;
+            pulse.alpha *= 0.982;
+
+            ctx.strokeStyle = `rgba(${pulse.hue}, ${pulse.alpha})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(pulse.x, pulse.y, pulse.r, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          pulses = pulses.filter((pulse) => pulse.alpha > 0.018);
+        }
+
+        function drawInterference() {
+          frame += 1;
+          const y = (frame * 1.8) % height;
+
+          ctx.fillStyle = "rgba(51, 204, 255, 0.055)";
+          ctx.fillRect(0, y, width, 1);
+
+          if (frame % 180 < 8) {
+            ctx.fillStyle = "rgba(255, 49, 88, 0.035)";
+            ctx.fillRect(0, Math.random() * height, width, 2 + Math.random() * 8);
+          }
+        }
+
+        function tick() {
+          drawBackground();
+          drawNodes();
+          drawPulses();
+          drawInterference();
+
+          if (!reducedMotion) requestAnimationFrame(tick);
+        }
+
+        resize();
+        addPulse();
+        tick();
+
+        if (!reducedMotion) {
+          window.setInterval(addPulse, 1500);
+        }
+
+        window.addEventListener("resize", resize);
+      })();
+    </script>
+  </body>
+</html>
